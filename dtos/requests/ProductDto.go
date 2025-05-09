@@ -28,3 +28,9 @@ type ProductCreateResponse struct {
 	Message string          `json:"message"`
 	Product ProductResponse `json:"product"`
 }
+
+type UpdateProductRequest struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	Sku         string `json:"sku"`
+}

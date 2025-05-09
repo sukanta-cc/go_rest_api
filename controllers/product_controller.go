@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sukantamajhi/go_rest_api/database"
@@ -153,4 +154,67 @@ func GetProducts(c *gin.Context) {
 			"pages": (total + limit - 1) / limit,
 		},
 	})
+}
+
+func UpdateProduct(c *gin.Context) {
+	productID := c.Param("id")
+
+	productCollection := database.GetCollection("products")
+
+	var product *models.Product
+	err := productCollection.FindOne(context.Background(), bson.M{"_id": utils.ObjectIDFromHex(productID)}).Decode(&product)
+
+	if err != nil {
+		utils.ErrorResponse(c, err.Error(), nil)
+		return
+	}
+
+	request, err := utils.ParseRequest[requests.UpdateProductRequest](c)
+	if err != nil {
+		utils.ErrorResponse(c, err.Error(), nil, http.StatusUnprocessableEntity)
+		return
+	}
+
+	product.Name = request.Name
+	product.Description = request.Description
+	product.Sku = request.Sku
+	product.UpdatedAt = time.Now()
+
+	_, err = productCollection.UpdateOne(context.Background(), bson.M{"_id": utils.ObjectIDFromHex(productID)}, bson.M{"$set": product})
+
+	if err != nil {
+		utils.ErrorResponse(c, err.Error(), nil)
+		return
+	}
+
+	utils.SuccessResponse(c, "Product updated successfully", product, http.StatusOK)
+}
+
+func DeleteProduct(c *gin.Context) {
+	productID := c.Param("id")
+
+	if productID == "" {
+		utils.ErrorResponse(c, "Product ID is required", nil)
+		return
+	}
+
+	userID, err := middleware.GetUserID(c)
+	if err != nil {
+		utils.ErrorResponse(c, "Unauthorized", nil)
+		return
+	}
+
+	productCollection := database.GetCollection("products")
+
+	_, err = productCollection.DeleteOne(context.Background(), bson.M{
+		"_id":       utils.ObjectIDFromHex(productID),
+		"createdBy": utils.ObjectIDFromHex(userID),
+	})
+
+	if err != nil {
+		utils.ErrorResponse(c, err.Error(), nil)
+		return
+	}
+
+	utils.SuccessResponse(c, "Product deleted successfully", nil, http.StatusOK)
 }

@@ -11,5 +11,8 @@ func ProductRouter(router *gin.RouterGroup) *gin.RouterGroup {
 
 	productRouter.POST("/", middleware.Authenticate(), controllers.CreateProduct)
 	productRouter.GET("/", middleware.Authenticate(), controllers.GetProducts)
+	productRouter.PUT("/:id", middleware.Authenticate(), controllers.UpdateProduct)
+	productRouter.DELETE("/:id", middleware.Authenticate(), controllers.DeleteProduct)
+
 	return productRouter
 }
